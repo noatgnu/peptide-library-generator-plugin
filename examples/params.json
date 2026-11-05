@@ -1,0 +1,6 @@
+{
+  "library_type": "orf_fasta",
+  "exon_data_file": "examples/as_results/AS_results_fpkm_JCEC_SE_human.seq.deseq.csv",
+  "cell_tag": "demo",
+  "min_length": 7
+}

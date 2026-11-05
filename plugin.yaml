@@ -1,0 +1,298 @@
+plugin:
+  id: "peptide-library-generator"
+  name: "Peptide Library Generator"
+  description: "Generate a full-length ORF or translated-AA peptide library from exon/splicing data, or a novel tryptic-digest target/decoy library from any FASTA"
+  version: "1.0.0"
+  author: "CauldronGO Team"
+  category: "proteomics"
+  subcategory: "sequence-analysis"
+  icon: "science"
+  repository: "https://github.com/noatgnu/peptide-library-generator-plugin"
+
+runtime:
+  environments: ["python"]
+  entrypoint: "peptide_library_generator.py"
+
+diagram:
+  enabled: true
+
+inputs:
+  - name: "library_type"
+    label: "Library Type"
+    type: "select"
+    required: true
+    default: "orf_fasta"
+    options:
+      - value: "orf_fasta"
+        label: "Full ORF FASTA (from exon nucleotide sequence data)"
+      - value: "translated_aa"
+        label: "Translated AA FASTA (from a splice-junction CSV)"
+      - value: "novel_tryptic"
+        label: "Novel Tryptic Digest + Decoy (from any FASTA)"
+    description: "Which kind of peptide library to generate"
+
+  - name: "exon_data_file"
+    label: "Exon Data File"
+    type: "file"
+    required: false
+    accept: ".csv,.xlsx"
+    description: "Exon-level data file (CSV or XLSX), one row per splicing event, with inclusion/exclusion nucleotide sequences. Required for the Full ORF FASTA type. Column names are mapped below; the defaults match rMATS's own AS_results column names."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "chromosome_column"
+    label: "Chromosome Column"
+    type: "text"
+    required: false
+    default: "chromosome"
+    description: "Name of the column holding the chromosome. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "strand_column"
+    label: "Strand Column"
+    type: "text"
+    required: false
+    default: "strand"
+    description: "Name of the column holding the strand. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "gene_column"
+    label: "Gene ID Column"
+    type: "text"
+    required: false
+    default: "gene"
+    description: "Name of the column holding the gene ID/accession. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "gene_name_column"
+    label: "Gene Name Column"
+    type: "text"
+    required: false
+    default: "gene_name"
+    description: "Name of the column holding the gene's display name. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "id_column"
+    label: "Row/Event ID Column"
+    type: "text"
+    required: false
+    default: "ID"
+    description: "Name of the column holding a unique row/event identifier. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "sequence_inclusion_column"
+    label: "Inclusion Sequence Column"
+    type: "text"
+    required: false
+    default: "sequence_inclusion"
+    description: "Name of the column holding the exon-inclusion nucleotide sequence. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "sequence_exclusion_column"
+    label: "Exclusion Sequence Column"
+    type: "text"
+    required: false
+    default: "sequence_exclusion"
+    description: "Name of the column holding the exon-exclusion nucleotide sequence. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "exon_start_column"
+    label: "Exon Start Column"
+    type: "text"
+    required: false
+    default: "exonStart_0base"
+    description: "Name of the column holding the exon start coordinate. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "exon_end_column"
+    label: "Exon End Column"
+    type: "text"
+    required: false
+    default: "exonEnd"
+    description: "Name of the column holding the exon end coordinate. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "comparison_column"
+    label: "Comparison Column"
+    type: "text"
+    required: false
+    default: ""
+    description: "Name of the column holding the comparison name used in FASTA header descriptions. Leave blank to auto-detect a column ending in '.l2fc'. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "group_label_column"
+    label: "Group Label Column"
+    type: "text"
+    required: false
+    default: ""
+    description: "Optional column copied verbatim into the tracking table's Group.Label (e.g. an event-type label from the source tool). Leave blank to omit. Only used for the Full ORF FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "orf_fasta"
+
+  - name: "input_csv"
+    label: "Translated Splice-Junction CSV"
+    type: "file"
+    required: false
+    accept: ".csv"
+    description: "CSV with Transcript, AA_seq, genes, novel_junction_type, novel_junction_dpsi, NMD, and TSL columns, one row per already-translated isoform. Required for the Translated AA FASTA type."
+    visibleWhen:
+      field: "library_type"
+      equals: "translated_aa"
+
+  - name: "cell_tag"
+    label: "Cell/Dataset Tag"
+    type: "text"
+    required: false
+    description: "Short tag identifying this dataset, used in every FASTA header's unique ID. Required for the Full ORF FASTA and Translated AA FASTA types."
+    visibleWhen:
+      field: "library_type"
+      equalsAny: ["orf_fasta", "translated_aa"]
+
+  - name: "source_fasta"
+    label: "Source FASTA"
+    type: "file"
+    required: false
+    accept: ".fasta,.fa"
+    description: "FASTA file to digest tryptically (e.g. the output of a prior Full ORF or Translated AA run). Required for the Novel Tryptic Digest type."
+    visibleWhen:
+      field: "library_type"
+      equals: "novel_tryptic"
+
+  - name: "reference_fasta"
+    label: "Reference FASTA"
+    type: "file"
+    required: false
+    accept: ".fasta,.fa"
+    description: "Reference proteome FASTA (e.g. canonical human UniProt) to check peptide novelty against. Required for the Novel Tryptic Digest type."
+    visibleWhen:
+      field: "library_type"
+      equals: "novel_tryptic"
+
+  - name: "miss_cleavage"
+    label: "Missed Cleavages"
+    type: "number"
+    required: false
+    default: 2
+    min: 0
+    max: 5
+    description: "Number of missed cleavages to allow when digesting. Only used for the Novel Tryptic Digest type."
+    visibleWhen:
+      field: "library_type"
+      equals: "novel_tryptic"
+
+  - name: "max_length"
+    label: "Maximum Peptide Length"
+    type: "number"
+    required: false
+    default: 30
+    min: 1
+    max: 200
+    description: "Maximum peptide length to keep. Only used for the Novel Tryptic Digest type."
+    visibleWhen:
+      field: "library_type"
+      equals: "novel_tryptic"
+
+  - name: "min_length"
+    label: "Minimum Length"
+    type: "number"
+    required: false
+    default: 7
+    min: 1
+    max: 200
+    description: "Minimum peptide/sequence length to keep, for whichever library type is selected"
+
+outputs:
+  - name: "orf_fasta"
+    path: "orf_library.fasta"
+    type: "data"
+    description: "Full-ORF peptide FASTA, one entry per translated exon inclusion/exclusion event and frame. Present only for the Full ORF FASTA type."
+    format: "fasta"
+
+  - name: "orf_tracking"
+    path: "orf_tracking.tsv"
+    type: "data"
+    description: "Tracking table for the Full ORF FASTA: gene, source file, event, frame, genomic location, and duplicate-sequence annotation for every entry. Present only for the Full ORF FASTA type."
+    format: "tsv"
+
+  - name: "translated_aa_fasta"
+    path: "translated_aa_library.fasta"
+    type: "data"
+    description: "Full-length translated-AA peptide FASTA, one entry per novel-junction transcript isoform. Present only for the Translated AA FASTA type."
+    format: "fasta"
+
+  - name: "translated_aa_tracking"
+    path: "translated_aa_tracking.tsv"
+    type: "data"
+    description: "Tracking table for the Translated AA FASTA: transcript, gene, junction type, dPSI, NMD, and TSL annotation for every entry. Present only for the Translated AA FASTA type."
+    format: "tsv"
+
+  - name: "novel_target"
+    path: "novel_peptides_target.fasta"
+    type: "data"
+    description: "Target FASTA of tryptic peptides from the source FASTA that are novel relative to the reference FASTA. Present only for the Novel Tryptic Digest type."
+    format: "fasta"
+
+  - name: "novel_decoy"
+    path: "novel_peptides_decoy.fasta"
+    type: "data"
+    description: "Decoy FASTA (reversed sequences, REVERSE_-prefixed headers) matching novel_target. Present only for the Novel Tryptic Digest type."
+    format: "fasta"
+
+execution:
+  argsMapping:
+    library_type: "--library_type"
+    exon_data_file: "--exon_data_file"
+    chromosome_column: "--chromosome_column"
+    strand_column: "--strand_column"
+    gene_column: "--gene_column"
+    gene_name_column: "--gene_name_column"
+    id_column: "--id_column"
+    sequence_inclusion_column: "--sequence_inclusion_column"
+    sequence_exclusion_column: "--sequence_exclusion_column"
+    exon_start_column: "--exon_start_column"
+    exon_end_column: "--exon_end_column"
+    comparison_column: "--comparison_column"
+    group_label_column: "--group_label_column"
+    input_csv: "--input_csv"
+    cell_tag: "--cell_tag"
+    source_fasta: "--source_fasta"
+    reference_fasta: "--reference_fasta"
+    miss_cleavage: "--miss_cleavage"
+    max_length: "--max_length"
+    min_length: "--min_length"
+
+  outputDir: "--output_folder"
+
+  requirements:
+    python: ">=3.10"
+    pythonRequirementsFile: "requirements.txt"
+
+example:
+  enabled: true
+  values:
+    library_type: "orf_fasta"
+    exon_data_file: "examples/as_results/AS_results_fpkm_JCEC_SE_human.seq.deseq.csv"
+    cell_tag: "demo"
+    min_length: 7
